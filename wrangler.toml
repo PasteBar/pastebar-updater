@@ -1,0 +1,5 @@
+name = "pastebar-updater"
+compatibility_date = "2023-01-01"
+workers_dev = false
+route = { pattern = "updater.pastebar.app/*", zone_name = "pastebar.app" }
+
