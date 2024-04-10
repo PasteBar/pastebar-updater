@@ -8,21 +8,29 @@ import { Bindings } from '../lib/bindings'
 // https://github.com/tauri-apps/tauri/blob/9b793eeb68902fc6794e9dc54cfc41323ff72169/core/tauri/src/updater/core.rs#L916
 export type Arch = 'i686' | 'x86_64' | 'armv7' | 'aarch64'
 
+export type Releases = {
+  assets: [
+    {
+      name: string
+      url: string
+    }
+  ]
+  tag_name: string
+  body: string
+  published_at: string
+}
+
 const hasKeywords = (str: string, keywords: string[]) =>
   keywords.some((k) => str.includes(k))
 
 export default async function ({
   bindings,
-  username,
-  reponame,
   platform,
   version,
   rootUrl,
   arch,
 }: {
   bindings: Bindings
-  username: string
-  reponame: string
   platform: string
   version: string
   rootUrl: string
@@ -38,14 +46,13 @@ export default async function ({
     return notFound()
   }
 
-  // Headers
-  const release: any = await getLatestRelease(bindings, username, reponame)
+  const release: Releases | null = await getLatestRelease(bindings)
 
   if (!release) {
     return notFound()
   }
 
-  console.log('found release', release)
+  console.log('Found releases', release)
 
   // Sanitize our version
   const remoteVersion = sanitizeVersion(release.tag_name.toLowerCase())
@@ -58,7 +65,6 @@ export default async function ({
   // Check if the user is running older version or not
   const shouldUpdate = semver.gt(remoteVersion, version)
   if (!shouldUpdate) {
-    console.log('no update available')
     return noUpdateAvailable()
   }
 

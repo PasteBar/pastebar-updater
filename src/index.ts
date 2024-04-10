@@ -4,6 +4,7 @@ import { downloadGitHubAsset } from './lib/download-github-asset'
 import github, { Arch } from './providers/github'
 import { getLatestRelease } from './lib/get-latest-release'
 import type { Bindings } from './lib/bindings'
+import { reponame, username } from './lib/constants'
 
 const app = new Hono<{
   Bindings: Bindings
@@ -16,15 +17,14 @@ app.use(async (c, next) => {
   await next()
 })
 
-app.all('/github/:username/:reponame/latest', async (c) => {
-  const param = c.req.param()
-  const release = await getLatestRelease(c.env, param.username, param.reponame)
+app.all('/latest', async (c) => {
+  const release = await getLatestRelease(c.env)
   if (!release) return c.notFound()
   return c.json(release)
 })
 
-app.get('/check/:username/:reponame/:platform/:arch/:version', (c) => {
-  console.log('checking updates', c.req.url)
+app.get('/check/:platform/:arch/:version', (c) => {
+  console.log('Checking updates', c.req.url)
   const url = new URL(c.req.url)
   const params = c.req.param()
   return github({

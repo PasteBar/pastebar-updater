@@ -1,17 +1,14 @@
+import { Releases } from '../providers/github'
 import { Bindings } from './bindings'
-import { USER_AGENT } from './constants'
+import { USER_AGENT, reponame, username } from './constants'
 
 export const getLatestRelease = async (
-  bindings: Bindings,
-  username: string,
-  reponame: string
-) => {
+  bindings: Bindings
+): Promise<Releases | null> => {
   const url = `https://api.github.com/repos/${username}/${reponame}/releases/latest`
-  console.log('getting latest release', url)
-  // Headers
+  console.log('Getting latest release', url)
   const headers: HeadersInit = {
     Accept: 'application/vnd.github.preview',
-    // chrome
     'user-agent': USER_AGENT,
   }
 
@@ -20,8 +17,8 @@ export const getLatestRelease = async (
     headers.Authorization = `token ${bindings.GITHUB_TOKEN}`
   }
 
-  // Get JSON from github
   const response = await fetch(url.toString(), {
+    cf: { cacheKey: 'pastebar-latest-release', cacheTtl: 3600 },
     method: 'GET',
     headers,
   })

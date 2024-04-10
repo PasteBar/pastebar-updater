@@ -4,6 +4,7 @@ import { USER_AGENT } from './constants'
 
 export async function fetchGitHubAsset(bindings: Bindings, asset: string) {
   const response = await fetch(asset, {
+    cf: { cacheEverything: true, cacheTtl: 3600 },
     headers: {
       Accept: 'application/octet-stream',
       Authorization: `token ${bindings.GITHUB_TOKEN}`,
