@@ -4,7 +4,6 @@ import { downloadGitHubAsset } from './lib/download-github-asset'
 import github, { Arch } from './providers/github'
 import { getLatestRelease } from './lib/get-latest-release'
 import type { Bindings } from './lib/bindings'
-import { reponame, username } from './lib/constants'
 
 const app = new Hono<{
   Bindings: Bindings

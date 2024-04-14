@@ -18,7 +18,7 @@ export const getLatestRelease = async (
   }
 
   const response = await fetch(url.toString(), {
-    cf: { cacheKey: 'pastebar-latest-release', cacheTtl: 3600 },
+    cf: { cacheKey: 'pastebar-latest-release', cacheTtl: 600 },
     method: 'GET',
     headers,
   })

@@ -12,6 +12,7 @@ export type Releases = {
   assets: [
     {
       name: string
+      browser_download_url: string
       url: string
     }
   ]
@@ -52,7 +53,7 @@ export default async function ({
     return notFound()
   }
 
-  console.log('Found releases', release)
+  // console.log('Found releases', release)
 
   // Sanitize our version
   const remoteVersion = sanitizeVersion(release.tag_name.toLowerCase())
@@ -77,6 +78,7 @@ export default async function ({
 
     // try to find signature for this asset
     const signature = await findAssetSignature(bindings, name, release.assets)
+    console.log('Asset found', asset['browser_download_url'])
 
     const result = {
       name: release.tag_name,
@@ -84,7 +86,7 @@ export default async function ({
       pub_date: release.published_at,
       signature,
       url: `${rootUrl}/github/download-asset?${new URLSearchParams({
-        asset: assetUrl,
+        asset: asset['browser_download_url'] as string,
         filename,
       }).toString()}`,
     }
@@ -175,11 +177,16 @@ async function findAssetSignature(
     (asset) => asset.name.toLowerCase() === `${fileName.toLowerCase()}.sig`
   )
 
+  console.log('Found Signature: ', foundSignature.browser_download_url)
+
   if (!foundSignature) {
     return null
   }
 
-  const response = await fetchGitHubAsset(bindings, foundSignature.url)
+  const response = await fetchGitHubAsset(
+    bindings,
+    foundSignature.browser_download_url
+  )
   if (!response.ok) {
     return null
   }
