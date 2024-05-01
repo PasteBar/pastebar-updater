@@ -6,7 +6,15 @@ import { getLatestRelease } from '../lib/get-latest-release'
 import { Bindings } from '../lib/bindings'
 
 // https://github.com/tauri-apps/tauri/blob/9b793eeb68902fc6794e9dc54cfc41323ff72169/core/tauri/src/updater/core.rs#L916
-export type Arch = 'i686' | 'x86_64' | 'armv7' | 'aarch64'
+export type Arch =
+  | 'i686'
+  | 'x86_64'
+  | 'armv7'
+  | 'aarch64'
+  | 'universal'
+  | 'arm64'
+  | 'x64'
+  | 'm1'
 
 export type Releases = {
   assets: [
@@ -23,6 +31,63 @@ export type Releases = {
 
 const hasKeywords = (str: string, keywords: string[]) =>
   keywords.some((k) => str.includes(k))
+
+export const getLatestDownloadUrl = async function ({
+  bindings,
+  platform,
+  rootUrl,
+  arch,
+}: {
+  bindings: Bindings
+  platform: string
+  rootUrl: string
+  arch: Arch
+}): Promise<{
+  filename?: string
+  downloadUrl?: string
+  ok: boolean
+}> {
+  // get the latest release without checking the current version
+
+  console.log('Getting latest release for platform', platform, arch)
+
+  if (!platform || !validatePlatform(platform)) {
+    return {
+      ok: false,
+    }
+  }
+
+  const release: Releases | null = await getLatestRelease(bindings)
+
+  if (!release) {
+    return {
+      ok: false,
+    }
+  }
+
+  for (const asset of release.assets) {
+    const { name, name: filename } = asset
+    const findPlatform = checkPlatformDownloads(platform, arch, name)
+    if (!findPlatform) {
+      continue
+    }
+
+    const result = {
+      filename,
+      ok: true,
+      downloadUrl: `${rootUrl}/github/download-asset?${new URLSearchParams({
+        asset: asset['browser_download_url'] as string,
+        filename,
+      }).toString()}`,
+    }
+
+    return result
+  }
+
+  return {
+    ok: false,
+  }
+}
 
 export default async function ({
   bindings,
@@ -53,8 +118,6 @@ export default async function ({
     return notFound()
   }
 
-  // console.log('Found releases', release)
-
   // Sanitize our version
   const remoteVersion = sanitizeVersion(release.tag_name.toLowerCase())
 
@@ -70,7 +133,7 @@ export default async function ({
   }
 
   for (const asset of release.assets) {
-    const { name, url: assetUrl, name: filename } = asset
+    const { name, name: filename } = asset
     const findPlatform = checkPlatform(platform, arch, name)
     if (!findPlatform) {
       continue
@@ -120,15 +183,51 @@ function getArch(fileName: string) {
     : 'x86_64'
 }
 
+function checkPlatformDownloads(
+  platform: string,
+  arch: Arch,
+  fileName: string
+) {
+  const extension = extname(fileName)
+  const _arch = getArch(fileName)
+
+  // OSX we should have our .dmg for MacOS downloads
+  if (extension === 'dmg' && platform === AVAILABLE_PLATFORMS.Mac) {
+    if (
+      arch === _arch ||
+      (_arch === 'aarch64' && arch === 'm1') ||
+      (_arch === 'universal' && arch === 'universal')
+    ) {
+      return true
+    }
+  }
+
+  // Windows we should have our .zip and setup for Windows downloads
+  if (
+    hasKeywords(fileName, ['setup', '.nsis']) &&
+    extension === 'zip' &&
+    platform === AVAILABLE_PLATFORMS.Windows
+  ) {
+    if (
+      _arch === arch ||
+      (_arch === 'x86_64' && arch === 'x64') ||
+      (_arch === 'armv7' && arch === 'arm64')
+    ) {
+      return true
+    }
+  }
+}
+
 function checkPlatform(platform: string, arch: Arch, fileName: string) {
   const extension = extname(fileName)
   const _arch = getArch(fileName)
 
   // OSX we should have our .app tar.gz
   if (
-    hasKeywords(fileName, ['.app', 'darwin', 'osx']) &&
-    extension === 'gz' &&
-    platform === AVAILABLE_PLATFORMS.MacOS
+    (hasKeywords(fileName, ['.app', 'darwin', 'osx']) &&
+      extension === 'gz' &&
+      platform === AVAILABLE_PLATFORMS.MacOS) ||
+    platform === AVAILABLE_PLATFORMS.Mac
   ) {
     if (
       arch === _arch ||

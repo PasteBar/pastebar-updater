@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { downloadGitHubAsset } from './lib/download-github-asset'
-import github, { Arch } from './providers/github'
+import github, { Arch, getLatestDownloadUrl } from './providers/github'
 import { getLatestRelease } from './lib/get-latest-release'
 import type { Bindings } from './lib/bindings'
 
@@ -32,6 +32,29 @@ app.get('/check/:platform/:arch/:version', (c) => {
     arch: params.arch as Arch,
     rootUrl: `${url.protocol}//${url.host}`,
   })
+})
+
+app.get('/download/latest/:platform/:arch', async (c) => {
+  const params = c.req.param()
+  if (!params.platform || !params.arch) return c.notFound()
+  const url = new URL(c.req.url)
+  const response = await getLatestDownloadUrl({
+    platform: params.platform,
+    arch: params.arch as Arch,
+    bindings: c.env,
+    rootUrl: `${url.protocol}//${url.host}`,
+  })
+
+  if (!response.ok) {
+    return c.notFound()
+  }
+
+  const { filename, downloadUrl } = response as {
+    filename: string
+    downloadUrl: string
+  }
+
+  return downloadGitHubAsset(c.env, downloadUrl, filename)
 })
 
 app.get('/github/download-asset', (c) => {
