@@ -32,25 +32,19 @@ export type Releases = {
 const hasKeywords = (str: string, keywords: string[]) =>
   keywords.some((k) => str.includes(k))
 
-export const getLatestDownloadUrl = async function ({
+export const getLatestDownloadAsset = async function ({
   bindings,
   platform,
-  rootUrl,
   arch,
 }: {
   bindings: Bindings
   platform: string
-  rootUrl: string
   arch: Arch
 }): Promise<{
   filename?: string
-  downloadUrl?: string
+  asset?: string
   ok: boolean
 }> {
-  // get the latest release without checking the current version
-
-  console.log('Getting latest release for platform', platform, arch)
-
   if (!platform || !validatePlatform(platform)) {
     return {
       ok: false,
@@ -75,10 +69,7 @@ export const getLatestDownloadUrl = async function ({
     const result = {
       filename,
       ok: true,
-      downloadUrl: `${rootUrl}/github/download-asset?${new URLSearchParams({
-        asset: asset['browser_download_url'] as string,
-        filename,
-      }).toString()}`,
+      asset: asset['browser_download_url'],
     }
 
     return result
@@ -141,7 +132,6 @@ export default async function ({
 
     // try to find signature for this asset
     const signature = await findAssetSignature(bindings, name, release.assets)
-    console.log('Asset found', asset['browser_download_url'])
 
     const result = {
       name: release.tag_name,
@@ -276,7 +266,7 @@ async function findAssetSignature(
     (asset) => asset.name.toLowerCase() === `${fileName.toLowerCase()}.sig`
   )
 
-  console.log('Found Signature: ', foundSignature.browser_download_url)
+  // console.log('Found Signature: ', foundSignature.browser_download_url)
 
   if (!foundSignature) {
     return null

@@ -20,6 +20,7 @@ export async function downloadGitHubAsset(
   filename: string
 ): Promise<Response> {
   const response = await fetchGitHubAsset(bindings, asset)
+  console.log('downloadGitHubAsset response', response)
   if (!response.ok) {
     return notFound()
   }
