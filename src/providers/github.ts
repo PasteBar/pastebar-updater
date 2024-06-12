@@ -231,11 +231,19 @@ function checkPlatform(platform: string, arch: Arch, fileName: string) {
 
   // Windows
   if (
-    hasKeywords(fileName, ['win64', 'win32', 'windows', '.msi', '.nsis']) &&
+    hasKeywords(fileName, [
+      'win64',
+      'win32',
+      'windows',
+      '.msi',
+      '.nsis',
+      'setup',
+    ]) &&
     extension === 'zip' &&
     platform === AVAILABLE_PLATFORMS.Windows
   ) {
-    if (_arch === arch) {
+    console.log('Checking Windows', fileName, arch, _arch)
+    if (_arch === arch || 'aarch64' === arch) {
       return 'windows'
     }
   }
