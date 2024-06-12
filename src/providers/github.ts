@@ -73,6 +73,7 @@ export default async function ({
     const { name, url: assetUrl, name: filename } = asset
     const findPlatform = checkPlatform(platform, arch, name)
     if (!findPlatform) {
+      console.log('Asset not found for', platform, arch, name)
       continue
     }
 
