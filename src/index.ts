@@ -22,6 +22,23 @@ app.all('/latest', async (c) => {
   return c.json(release)
 })
 
+app.get('/latest/:platform/:arch', async (c) => {
+  const params = c.req.param()
+  console.log('Checking latest', params)
+  if (!params.platform || !params.arch) return c.notFound()
+  const response = await getLatestDownloadAsset({
+    platform: params.platform,
+    arch: params.arch as Arch,
+    bindings: c.env,
+  })
+
+  if (!response.ok) {
+    return c.notFound()
+  }
+
+  return c.json(response)
+})
+
 app.get('/check/:platform/:arch/:version', (c) => {
   console.log('Checking updates', c.req.url)
   const url = new URL(c.req.url)
