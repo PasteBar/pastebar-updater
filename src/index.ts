@@ -88,3 +88,4 @@ app.get('/ping', (c) => {
 })
 
 export default app
+export { AssetCache } from './asset-cache'

@@ -3,3 +3,11 @@ compatibility_date = "2023-01-01"
 workers_dev = false
 route = { pattern = "updater.pastebar.app/*", zone_name = "pastebar.app" }
 
+[durable_objects]
+bindings = [
+  { name = "ASSET_CACHE", class_name = "AssetCache" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["AssetCache"]
