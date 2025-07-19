@@ -196,7 +196,7 @@ function checkPlatformDownloads(
   // Windows we should have our .zip and setup for Windows downloads
   if (
     hasKeywords(fileName, ['setup', '.nsis']) &&
-    extension === 'zip' &&
+    (extension === 'zip' || extension === 'exe') &&
     platform === AVAILABLE_PLATFORMS.Windows
   ) {
     if (
