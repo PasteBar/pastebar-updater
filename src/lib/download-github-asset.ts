@@ -22,12 +22,23 @@ export async function downloadGitHubAsset(
   asset: string,
   filename: string
 ): Promise<Response> {
+  // Check cache first
+  const cached = await getCache(bindings, asset)
+  if (cached && cached.expires > Date.now()) {
+    console.log('downloadGitHubAsset: returning cached response for', asset)
+    const headers = new Headers(cached.headers)
+    headers.set('Content-Disposition', `attachment; filename="${filename}"`)
+    return new Response(cached.data.slice(0), { headers })
+  }
+
+  // If not in cache or expired, fetch from GitHub
   let response = await fetchGitHubAsset(bindings, asset)
   console.log('downloadGitHubAsset response', response)
 
   if (!response.ok) {
-    const cached = await getCache(bindings, asset)
+    // If fetch failed but we have expired cache, use it as fallback
     if (cached) {
+      console.log('downloadGitHubAsset: GitHub request failed, using expired cache for', asset)
       const headers = new Headers(cached.headers)
       headers.set('Content-Disposition', `attachment; filename="${filename}"`)
       return new Response(cached.data.slice(0), { headers })
@@ -40,6 +51,7 @@ export async function downloadGitHubAsset(
     }
   }
 
+  // Store successful response in cache
   const data = await response.arrayBuffer()
   await setCache(bindings, asset, {
     data,
