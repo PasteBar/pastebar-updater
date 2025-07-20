@@ -26,11 +26,6 @@ export const getLatestRelease = async (
     'user-agent': USER_AGENT,
   }
 
-  // Add github token if provided
-  if (bindings.GITHUB_TOKEN && bindings.GITHUB_TOKEN.length > 0) {
-    headers.Authorization = `token ${bindings.GITHUB_TOKEN}`
-  }
-
   const response = await fetch(url.toString(), {
     cf: { cacheKey: 'pastebar-latest-release', cacheTtl: 600 },
     method: 'GET',

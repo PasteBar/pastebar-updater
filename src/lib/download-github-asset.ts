@@ -1,65 +1,42 @@
 import { notFound } from './response'
 import { Bindings } from './bindings'
 import { USER_AGENT } from './constants'
-import { getCache, setCache } from './cache'
 
 export async function fetchGitHubAsset(bindings: Bindings, asset: string) {
   const response = await fetch(asset, {
     cf: { cacheEverything: true, cacheTtl: 1800 },
     headers: {
       Accept: 'application/octet-stream',
-      Authorization: `token ${bindings.GITHUB_TOKEN}`,
       'user-agent': USER_AGENT,
     },
   })
   return response
 }
 
-const LOCAL_CACHE_TTL = 60 * 60 // 1 hour
-
 export async function downloadGitHubAsset(
   bindings: Bindings,
   asset: string,
   filename: string
 ): Promise<Response> {
-  // Check cache first
-  const cached = await getCache(bindings, asset)
-  if (cached && cached.expires > Date.now()) {
-    console.log('downloadGitHubAsset: returning cached response for', asset)
-    const headers = new Headers(cached.headers)
-    headers.set('Content-Disposition', `attachment; filename="${filename}"`)
-    return new Response(cached.data.slice(0), { headers })
-  }
-
-  // If not in cache or expired, fetch from GitHub
+  console.log('downloadGitHubAsset called with:', { asset, filename })
+  
   let response = await fetchGitHubAsset(bindings, asset)
-  console.log('downloadGitHubAsset response', response)
+  console.log('downloadGitHubAsset response status:', response.status, 'ok:', response.ok)
 
   if (!response.ok) {
-    // If fetch failed but we have expired cache, use it as fallback
-    if (cached) {
-      console.log('downloadGitHubAsset: GitHub request failed, using expired cache for', asset)
-      const headers = new Headers(cached.headers)
-      headers.set('Content-Disposition', `attachment; filename="${filename}"`)
-      return new Response(cached.data.slice(0), { headers })
-    }
-
     // retry once
+    console.log('First fetch failed, retrying...')
     response = await fetchGitHubAsset(bindings, asset)
     if (!response.ok) {
+      console.log('Retry failed with status:', response.status)
       return notFound()
     }
   }
 
-  // Store successful response in cache
-  const data = await response.arrayBuffer()
-  await setCache(bindings, asset, {
-    data,
-    headers: [...response.headers.entries()],
-    expires: Date.now() + LOCAL_CACHE_TTL * 1000,
-  })
-
+  console.log('Fetch successful, streaming response...')
   const headers = new Headers(response.headers)
   headers.set('Content-Disposition', `attachment; filename="${filename}"`)
-  return new Response(data, { headers })
+  
+  // Stream the response directly without buffering
+  return new Response(response.body, { headers })
 }
