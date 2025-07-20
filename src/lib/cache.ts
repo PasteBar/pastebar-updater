@@ -31,7 +31,13 @@ export async function getCache(
   const stub = bindings.ASSET_CACHE.get(id)
   const res = await stub.fetch('https://cache/', { method: 'GET' })
   if (res.status !== 200) return undefined
-  const headers = JSON.parse(res.headers.get('x-headers') || '[]') as [string, string][]
+  let headers: [string, string][];
+  try {
+    headers = JSON.parse(res.headers.get('x-headers') || '[]') as [string, string][];
+  } catch (error) {
+    console.error('Failed to parse x-headers:', error);
+    headers = [];
+  }
   const expires = Number(res.headers.get('x-expires')) || 0
   const data = await res.arrayBuffer()
   return { data, headers, expires }
