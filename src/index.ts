@@ -76,11 +76,17 @@ app.get('/download/latest/:platform/:arch', async (c) => {
   return downloadGitHubAsset(c.env, asset, filename)
 })
 
-app.get('/github/download-asset', (c) => {
+app.get('/github/download-asset', async (c) => {
   const asset = c.req.query('asset')
   const filename = c.req.query('filename')
   if (!asset || !filename) return c.notFound()
-  return downloadGitHubAsset(c.env, asset, filename)
+  
+  try {
+    return await downloadGitHubAsset(c.env, asset, filename)
+  } catch (error) {
+    console.error('Error downloading asset:', error)
+    return c.text(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 500)
+  }
 })
 
 app.get('/ping', (c) => {
@@ -88,3 +94,4 @@ app.get('/ping', (c) => {
 })
 
 export default app
+export { AssetCache } from './asset-cache'

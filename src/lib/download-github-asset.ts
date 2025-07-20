@@ -4,10 +4,9 @@ import { USER_AGENT } from './constants'
 
 export async function fetchGitHubAsset(bindings: Bindings, asset: string) {
   const response = await fetch(asset, {
-    cf: { cacheEverything: true, cacheTtl: 3600 },
+    cf: { cacheEverything: true, cacheTtl: 1800 },
     headers: {
       Accept: 'application/octet-stream',
-      Authorization: `token ${bindings.GITHUB_TOKEN}`,
       'user-agent': USER_AGENT,
     },
   })
@@ -19,15 +18,25 @@ export async function downloadGitHubAsset(
   asset: string,
   filename: string
 ): Promise<Response> {
-  const response = await fetchGitHubAsset(bindings, asset)
-  console.log('downloadGitHubAsset response', response)
+  console.log('downloadGitHubAsset called with:', { asset, filename })
+  
+  let response = await fetchGitHubAsset(bindings, asset)
+  console.log('downloadGitHubAsset response status:', response.status, 'ok:', response.ok)
+
   if (!response.ok) {
-    return notFound()
+    // retry once
+    console.log('First fetch failed, retrying...')
+    response = await fetchGitHubAsset(bindings, asset)
+    if (!response.ok) {
+      console.log('Retry failed with status:', response.status)
+      return notFound()
+    }
   }
+
+  console.log('Fetch successful, streaming response...')
   const headers = new Headers(response.headers)
-  // use custom filename if provided
   headers.set('Content-Disposition', `attachment; filename="${filename}"`)
-  return new Response(response.body, {
-    headers,
-  })
+  
+  // Stream the response directly without buffering
+  return new Response(response.body, { headers })
 }
