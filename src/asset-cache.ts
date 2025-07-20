@@ -11,7 +11,7 @@ export class AssetCache extends DurableObject {
     if (request.method === 'GET') {
       const entry = (await this.ctx.storage.get<CacheEntry>('entry')) || null
       if (!entry || entry.expires < Date.now()) {
-        if (entry && entry.expires < Date.now()) {
+        if (entry) {
           await this.ctx.storage.delete('entry')
         }
         return new Response('not found', { status: 404 })
