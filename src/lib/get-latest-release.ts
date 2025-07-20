@@ -26,6 +26,10 @@ export const getLatestRelease = async (
     'user-agent': USER_AGENT,
   }
 
+  // Add GitHub token to headers if available
+  if (bindings.githubToken) {
+    headers['Authorization'] = `Bearer ${bindings.githubToken}`
+  }
   const response = await fetch(url.toString(), {
     cf: { cacheKey: 'pastebar-latest-release', cacheTtl: 600 },
     method: 'GET',
